@@ -27,6 +27,7 @@ minpts = 50;
     %then run dbscan on that cluster on points made of the points coordinates (x, y, z) and the one-hot
     %encoded primitive types (t1, t2, t3, t4, t5)
     final_pc = zeros(1,12); %initialization for concatenating matrices vertically
+    cid_counter = 0;
     uniq_cids = unique(cids);
     num_cids = length(uniq_cids);
     for i = 1:num_cids
@@ -36,14 +37,16 @@ minpts = 50;
         if length(uniq_pids) > 1 %if points in a given cluster have different primitive types
             curr_pc = append_onehotencoded(curr_pc);
             curr_pc_cp = [curr_pc(:,1:3),curr_pc(:,7:11)]; %points coordinates (x, y, z) and the one-hot encoded primitive types (t1, t2, t3, t4, t5)
-            final_cids = dbscan(curr_pc_cp, epsilon, minpts); %Assume this dbscan doesn't create more than 10 clusters
+            final_cids = dbscan(curr_pc_cp, epsilon, minpts);
             curr_pc = [curr_pc, final_cids];
             curr_pc = curr_pc(curr_pc(:,12)~=-1,:); %Remove points which doesn't belong to any clusters
-            final_pc = [final_pc; curr_pc(:,1:11), curr_pc(:,12) + i*10];
+            final_pc = [final_pc; curr_pc(:,1:11), curr_pc(:,12) + cid_counter];
+            cid_counter = cid_counter + max(final_cids);
         else
             curr_pc = append_onehotencoded(curr_pc);
-            curr_pc = [curr_pc, ones(size(curr_pc,1),1)*i*10];
+            curr_pc = [curr_pc, ones(size(curr_pc,1),1)*(cid_counter+1)];
             final_pc = [final_pc; curr_pc];
+            cid_counter = cid_counter + 1;
         end
     end
     
