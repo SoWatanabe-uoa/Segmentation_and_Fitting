@@ -25,8 +25,7 @@ function segmentation(inputDirectoryName, outputDirectoryName)
     for i = 3 : num_data
         inputDataPath = append(inputDirectoryName, '/', inputDirectory(i).name);
         outputResultPath = append(outputDirectoryName, '/', inputDirectory(i).name);
-        command = append('orig_ransac_command.exe ', inputDataPath, '/', 'pc.xyzn ', outputResultPath, '/', 'pc.segps');
-        %, inputDataPath, '/', 'parameters.conf');
+        command = append('orig_ransac_command.exe ', inputDataPath, '/', 'pc.xyzn ', outputResultPath, '/', 'pc.segps ', inputDataPath, '/', 'parameters.conf');
         diary ransac_log.txt
         system(command);
         diary off
