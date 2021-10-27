@@ -1,4 +1,3 @@
-
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -8,8 +7,6 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
-#include <cstddef>
-
 
 #include <PointCloud.h>
 
@@ -22,18 +19,8 @@
 #include <TorusPrimitiveShapeConstructor.h>
 
 #include <PlanePrimitiveShape.h> // for PlanePrimitiveShape
-#include <TorusPrimitiveShape.h>
-#include <Torus.h>
-#include <CylinderPrimitiveShape.h>
-#include <Cylinder.h>
-#include <Merge.h>
 
 #include <basic.h> // for Vec3f
-
-
-#include <OBB/OBB_Vec3.h>
-#include <OBB/OBB.h>
-
 
 
 typedef std::vector< std::pair< MiscLib::RefCountPtr< PrimitiveShape >, size_t > > ShapeVector;
@@ -41,82 +28,8 @@ typedef std::vector< std::pair< MiscLib::RefCountPtr< PrimitiveShape >, size_t >
 
 void usage(const std::string& name) {
   std::cout << "Usage: " << std::endl;
-  std::cout << name << " object.xyzn object-segmented.segps"
-            << std::endl;
-  std::cout << name << " object.xyzn object-segmented.segps"
-            << " parameters.conf" << std::endl;
+  std::cout << name << " input.pc segmented_output.pcs" << std::endl;
 }
-
-
-struct Options {
-  float epsilon;
-  float bitmap_epsilon;
-  float normal_threshold;
-  int min_support;
-  float probability;
-  float dist_threshold;
-  float dot_threshold;
-  float angle_threshold;
-
-  // primitives to use
-  bool use_plane;
-  bool use_sphere;
-  bool use_cylinder;
-  bool use_cone;
-  bool use_torus;
-
-  // for extra half-planes, use AABB or OBB to bound the
-  // primitives point-cloud
-  bool use_AABB;
-
-  // use a separating cylinder for the torus?
-  bool use_separating_cylinder;
-
-  
-  Options() {
-    epsilon = 0.01f;
-    bitmap_epsilon = 0.02f;
-    normal_threshold = 0.9f;
-    min_support = 500;
-    probability = 0.001f;
-    dist_threshold = 0.001f;
-    dot_threshold = 0.95f;
-    angle_threshold = 1.0f;
-    
-    use_plane = true;
-    use_sphere = true;
-    use_cylinder = true;
-    use_cone = true;
-    use_torus = true;
-
-    use_AABB = true;
-
-    use_separating_cylinder = true;
-  }
-
-  void printOptions() {
-    std::cout << "bitmap epsilon: " << bitmap_epsilon << std::endl;
-    std::cout << "epsilon: " << epsilon << std::endl;
-    std::cout << "min support: " << min_support << std::endl;
-    std::cout << "normal threshold: " << normal_threshold << std::endl;
-    std::cout << "probability: " << probability << std::endl;
-    std::cout << "dist threshold: " << dist_threshold << std::endl;
-    std::cout << "dot threshold: " << dot_threshold << std::endl;
-    std::cout << "angle threshold: " << angle_threshold << std::endl;
-
-
-    std::cout << "use cone: " << use_cone << std::endl;
-    std::cout << "use cylinder: " << use_cylinder << std::endl;
-    std::cout << "use plane: " << use_plane << std::endl;
-    std::cout << "use sphere: " << use_sphere << std::endl;
-    std::cout << "use torus: " << use_torus << std::endl;
-
-    std::cout << "fit AABB: " << use_AABB << std::endl;
-
-    std::cout << "add a separating cylinder for the torus: "
-              << use_separating_cylinder << std::endl;
-  }
-};
 
 
 bool read_xyzn(const std::string& infn, PointCloud& pc) {
@@ -559,7 +472,8 @@ write_segmented_pc(
   size_t sum = 0;
 
   for (unsigned int i = 0; i < shapes.size(); ++i) {
-    for (unsigned int j = sum; j < sum + shapes[i].second; ++j) {
+    for (unsigned int j = pc.size() - (sum + shapes[i].second);
+         j < pc.size() - sum; ++j) {
 
       Point p = pc[j];
       ofile << p[0] << " " << p[1] << " "
@@ -676,105 +590,6 @@ write_segmented_mesh(
 }
 
 
-// Compute additional halfplanes corresponding to the planes of the bounding
-// boxes of the non-planar shapes:
-void
-compute_additional_halfplanes(
-    const ShapeVector& shapes, const PointCloud& pc, 
-    std::vector< MiscLib::RefCountPtr< PlanePrimitiveShape> >& halfplanes)
-{
-  size_t sum = 0;
-  unsigned int num_primitives = shapes.size();
-  
-  for (unsigned int i = 0; i < num_primitives; ++i)
-  {
-    size_t id = shapes[i].first->Identifier();
-    
-    if (id == 0) {
-      // a plane; we don't have to do anything
-    } else {
-      // Extract the corresponding point-cloud
-      std::vector< Point > points;
-      for (unsigned int j = pc.size() - (sum + shapes[i].second);
-           j < pc.size() - sum; ++j)
-      {
-        Point p = pc[j];
-        points.push_back(p);
-      }
-
-      // NOTE: I can probably use std::copy instead
-      unsigned int num_points = points.size();      
-      Point* points_ptr = new Point[num_points];
-      for (unsigned int k = 0; k < num_points; ++k) {
-        points_ptr[k] = points[k];
-      }
-      PointCloud temp_pc(points_ptr, num_points);
-      delete[] points_ptr;
-
-      
-      // Compute its bounding box
-      Vec3f min_pt;
-      Vec3f max_pt;
-      compute_bbox(temp_pc, min_pt, max_pt);
-
-      
-      // Find the 6 corresponding planes
-
-      // construct 6 planes using the plane constructor:
-      // Plane(Vec3f p1, Vec3f p2, Vec3f p3);
-      // Then pass a plane object to PlanePrimitiveShape constructor;
-      // Then add the shape to the list;
-      
-      // Plane 1:
-      Vec3f p1(min_pt[0], min_pt[1], min_pt[2]);
-      Vec3f p2(max_pt[0], min_pt[1], min_pt[2]);
-      Vec3f p3(max_pt[0], min_pt[1], max_pt[2]);
-      PlanePrimitiveShape* pps1 = new PlanePrimitiveShape(p1, p2, p3);
-      halfplanes.push_back(pps1);
-
-      // Plane 2:
-      p1 = Vec3f(max_pt[0], max_pt[1], max_pt[2]); // Can I do that??
-      p2 = Vec3f(max_pt[0], min_pt[1], max_pt[2]);
-      p3 = Vec3f(max_pt[0], min_pt[1], min_pt[2]);
-      PlanePrimitiveShape* pps2 = new PlanePrimitiveShape(p1, p2, p3);
-      halfplanes.push_back(pps2);
-      
-      // Plane 3:
-      p1 = Vec3f(max_pt[0], max_pt[1], max_pt[2]);
-      p2 = Vec3f(max_pt[0], max_pt[1], min_pt[2]);
-      p3 = Vec3f(min_pt[0], max_pt[1], min_pt[2]);
-      PlanePrimitiveShape* pps3 = new PlanePrimitiveShape(p1, p2, p3);
-      halfplanes.push_back(pps3);
-
-      // Plane 4:
-      p1 = Vec3f(min_pt[0], max_pt[1], max_pt[2]);
-      p2 = Vec3f(min_pt[0], max_pt[1], min_pt[2]);
-      p3 = Vec3f(min_pt[0], min_pt[1], min_pt[2]);
-      PlanePrimitiveShape* pps4 = new PlanePrimitiveShape(p1, p2, p3);
-      halfplanes.push_back(pps4);
-      
-      // Plane 5:
-      p1 = Vec3f(max_pt[0], max_pt[1], max_pt[2]);
-      p2 = Vec3f(min_pt[0], max_pt[1], max_pt[2]);
-      p3 = Vec3f(min_pt[0], min_pt[1], max_pt[2]);
-      PlanePrimitiveShape* pps5 = new PlanePrimitiveShape(p1, p2, p3);
-      halfplanes.push_back(pps5);
-
-      // Plane 6:
-      p1 = Vec3f(min_pt[0], min_pt[1], min_pt[2]);
-      p2 = Vec3f(min_pt[0], max_pt[1], min_pt[2]);
-      p3 = Vec3f(max_pt[0], max_pt[1], min_pt[2]);
-      PlanePrimitiveShape* pps6 = new PlanePrimitiveShape(p1, p2, p3);
-      halfplanes.push_back(pps6);
-      
-    } // if plane
-
-    sum += shapes[i].second;
-    
-  } // for each primitive
-}
-
-
 // Is the plane defined by the three points p1, p2 and p3 degenerate?
 bool plane_is_degenerate(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3)
 {
@@ -855,7 +670,7 @@ plane_exists(
 // Compute additional halfplanes corresponding to the planes of the bounding
 // boxes of the non-planar shapes:
 void
-compute_additional_halfplanes_FIXED(
+compute_additional_halfplanes(
     const ShapeVector& shapes, const PointCloud& pc, 
     std::vector< MiscLib::RefCountPtr< PlanePrimitiveShape> >& halfplanes)
 {
@@ -975,16 +790,13 @@ compute_additional_halfplanes_FIXED(
 }
 
 
-// See also: compute_additional_halfplanes_FIXED()
-//
-// This function computes an Oriented Bounding Box
-// (OBB) to each point-cloud and add the planes
-// corresponding to its faces to the list of primitives.
-//
+// boxes is a list of box
+// A box is just a list of 6 parameters, corresponding to the position of the 
+// bounding planes along x, y and z
 void
-compute_additional_halfplanes_OBB_WRONG(
+compute_additional_boxes(
     const ShapeVector& shapes, const PointCloud& pc, 
-    std::vector< MiscLib::RefCountPtr< PlanePrimitiveShape> >& halfplanes)
+    std::vector< std::vector<float> >& boxes)
 {
   size_t sum = 0;
   unsigned int num_primitives = shapes.size();
@@ -1005,304 +817,35 @@ compute_additional_halfplanes_OBB_WRONG(
         points.push_back(p);
       }
 
-
-      std::vector< OBBVec3 > pts;
-      size_t sz = points.size();
-      for (size_t j = 0; j < sz; ++j) {
-        OBBVec3 p;
-        p.x = points[j].pos[0];
-        p.y = points[j].pos[1];
-        p.z = points[j].pos[2];
-
-        pts.push_back(p);
+      // NOTE: I can probably use std::copy instead
+      unsigned int num_points = points.size();      
+      Point* points_ptr = new Point[num_points];
+      for (unsigned int k = 0; k < num_points; ++k) {
+        points_ptr[k] = points[k];
       }
+      PointCloud temp_pc(points_ptr, num_points);
+      delete[] points_ptr;
 
-      OBB obb_pts;
-      obb_pts.build_from_points(pts);
-      OBBVec3 corners[8];
-      obb_pts.get_bounding_box(corners);
-        
+      
+      // Compute its bounding box
       Vec3f min_pt;
-      // the lower left corner (min_pt) corresponds to corners[0]
-      min_pt[0] = corners[0].x;
-      min_pt[1] = corners[0].y;
-      min_pt[2] = corners[0].z;
-
-
       Vec3f max_pt;
-      // the upper right corner (max_pt) corresponds to corners[6]
-      max_pt[0] = corners[6].x;
-      max_pt[1] = corners[6].y;
-      max_pt[2] = corners[6].z;
+      compute_bbox(temp_pc, min_pt, max_pt);
 
-      
-      // Find the 6 corresponding planes
-      //
-      // IMPORTANT: the computation of the 6 planes below
-      // is completely WRONG.
-      // Use the function compute_additional_halfplanes_OBB() instead.
-      //
+      // the parameters: xmin,xmax, ymin,ymax, zmin,zmax
+      std::vector<float> box_tmp(6);
+      box_tmp[0]=min_pt[0];
+      box_tmp[1]=max_pt[0];
 
-      // construct 6 planes using the plane constructor:
-      // Plane(Vec3f p1, Vec3f p2, Vec3f p3);
-      // Then pass a plane object to PlanePrimitiveShape constructor;
-      // Then add the shape to the list;
-      
-      // Plane 1:
-      Vec3f p1(min_pt[0], min_pt[1], min_pt[2]);
-      Vec3f p2(max_pt[0], min_pt[1], min_pt[2]);
-      Vec3f p3(max_pt[0], min_pt[1], max_pt[2]);
-      PlanePrimitiveShape* pps1 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps1, halfplanes))
-      {
-          halfplanes.push_back(pps1);
-      }
-      
-      // Plane 2:
-      p1 = Vec3f(max_pt[0], max_pt[1], max_pt[2]);
-      p2 = Vec3f(max_pt[0], min_pt[1], max_pt[2]);
-      p3 = Vec3f(max_pt[0], min_pt[1], min_pt[2]);
-      PlanePrimitiveShape* pps2 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps2, halfplanes))
-      {
-          halfplanes.push_back(pps2);
-      }
+      box_tmp[2]=min_pt[1];
+      box_tmp[3]=max_pt[1];
 
-      // Plane 3:
-      p1 = Vec3f(max_pt[0], max_pt[1], max_pt[2]);
-      p2 = Vec3f(max_pt[0], max_pt[1], min_pt[2]);
-      p3 = Vec3f(min_pt[0], max_pt[1], min_pt[2]);
-      PlanePrimitiveShape* pps3 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps3, halfplanes))
-      {
-          halfplanes.push_back(pps3);
-      }
+      box_tmp[4]=min_pt[2];
+      box_tmp[5]=max_pt[2];
 
-      // Plane 4:
-      p1 = Vec3f(min_pt[0], max_pt[1], max_pt[2]);
-      p2 = Vec3f(min_pt[0], max_pt[1], min_pt[2]);
-      p3 = Vec3f(min_pt[0], min_pt[1], min_pt[2]);
-      PlanePrimitiveShape* pps4 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps4, halfplanes))
-      {
-          halfplanes.push_back(pps4);
-      }
-      
-      // Plane 5:
-      p1 = Vec3f(max_pt[0], max_pt[1], max_pt[2]);
-      p2 = Vec3f(min_pt[0], max_pt[1], max_pt[2]);
-      p3 = Vec3f(min_pt[0], min_pt[1], max_pt[2]);
-      PlanePrimitiveShape* pps5 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps5, halfplanes))
-      {
-          halfplanes.push_back(pps5);
-      }
-
-      // Plane 6:
-      p1 = Vec3f(min_pt[0], min_pt[1], min_pt[2]);
-      p2 = Vec3f(min_pt[0], max_pt[1], min_pt[2]);
-      p3 = Vec3f(max_pt[0], max_pt[1], min_pt[2]);
-      PlanePrimitiveShape* pps6 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps6, halfplanes))
-      {
-          halfplanes.push_back(pps6);
-      }
-      
-    } // if plane
-
-    sum += shapes[i].second;
-    
+      boxes.push_back(box_tmp);
+    } // if plane  
   } // for each primitive
-}
-
-
-// See also: compute_additional_halfplanes_FIXED()
-//
-// This function computes an Oriented Bounding Box
-// (OBB) to each point-cloud and add the planes
-// corresponding to its faces to the list of primitives.
-//
-void
-compute_additional_halfplanes_OBB(
-    const ShapeVector& shapes, const PointCloud& pc, 
-    std::vector< MiscLib::RefCountPtr< PlanePrimitiveShape> >& halfplanes)
-{
-  size_t sum = 0;
-  unsigned int num_primitives = shapes.size();
-  
-  for (unsigned int i = 0; i < num_primitives; ++i)
-  {
-    size_t id = shapes[i].first->Identifier();
-    
-    if (id == 0) {
-      // a plane; we don't have to do anything
-    } else {
-      // Extract the corresponding point-cloud
-      std::vector< Point > points;
-      for (unsigned int j = pc.size() - (sum + shapes[i].second);
-           j < pc.size() - sum; ++j)
-      {
-        Point p = pc[j];
-        points.push_back(p);
-      }
-
-
-      std::vector< OBBVec3 > pts;
-      size_t sz = points.size();
-      for (size_t j = 0; j < sz; ++j) {
-        OBBVec3 p;
-        p.x = points[j].pos[0];
-        p.y = points[j].pos[1];
-        p.z = points[j].pos[2];
-
-        pts.push_back(p);
-      }
-
-      OBB obb_pts;
-      obb_pts.build_from_points(pts);
-      OBBVec3 corners[8];
-      obb_pts.get_bounding_box(corners);
-
-
-      int quad[][4] = {
-        { 0, 1, 2, 3 },
-        { 4, 7, 6, 5 },
-        { 0, 3, 7, 4 },
-        { 1, 5, 6, 2 },
-        { 0, 4, 5, 1 },
-        { 2, 6, 7, 3 }
-      };
-
-      
-      // Find the 6 corresponding planes
-      //
-
-      // Plane 1:
-      Vec3f p1(corners[0].x, corners[0].y, corners[0].z);
-      Vec3f p2(corners[1].x, corners[1].y, corners[1].z);
-      Vec3f p3(corners[2].x, corners[2].y, corners[2].z);
-      PlanePrimitiveShape* pps1 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps1, halfplanes))
-      {
-          halfplanes.push_back(pps1);
-      }
-      
-      // Plane 2:
-      p1 = Vec3f(corners[4].x, corners[4].y, corners[4].z);
-      p2 = Vec3f(corners[7].x, corners[7].y, corners[7].z);
-      p3 = Vec3f(corners[6].x, corners[6].y, corners[6].z);
-      PlanePrimitiveShape* pps2 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps2, halfplanes))
-      {
-          halfplanes.push_back(pps2);
-      }
-
-      // Plane 3:
-      p1 = Vec3f(corners[0].x, corners[0].y, corners[0].z);
-      p2 = Vec3f(corners[3].x, corners[3].y, corners[3].z);
-      p3 = Vec3f(corners[7].x, corners[7].y, corners[7].z);
-      PlanePrimitiveShape* pps3 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps3, halfplanes))
-      {
-          halfplanes.push_back(pps3);
-      }
-
-      // Plane 4:
-      p1 = Vec3f(corners[1].x, corners[1].y, corners[1].z);
-      p2 = Vec3f(corners[5].x, corners[5].y, corners[5].z);
-      p3 = Vec3f(corners[6].x, corners[6].y, corners[6].z);
-      PlanePrimitiveShape* pps4 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps4, halfplanes))
-      {
-          halfplanes.push_back(pps4);
-      }
-      
-      // Plane 5:
-      p1 = Vec3f(corners[0].x, corners[0].y, corners[0].z);
-      p2 = Vec3f(corners[4].x, corners[4].y, corners[4].z);
-      p3 = Vec3f(corners[5].x, corners[5].y, corners[5].z);
-      PlanePrimitiveShape* pps5 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps5, halfplanes))
-      {
-          halfplanes.push_back(pps5);
-      }
-
-      // Plane 6:
-      p1 = Vec3f(corners[2].x, corners[2].y, corners[2].z);
-      p2 = Vec3f(corners[6].x, corners[6].y, corners[6].z);
-      p3 = Vec3f(corners[7].x, corners[7].y, corners[7].z);
-      PlanePrimitiveShape* pps6 = new PlanePrimitiveShape(p1, p2, p3);
-      if (!plane_is_degenerate(p1, p2, p3) &&
-          !plane_exists(pps6, halfplanes))
-      {
-          halfplanes.push_back(pps6);
-      }
-      
-    } // if plane
-
-    sum += shapes[i].second;
-    
-  } // for each primitive
-}
-
-
-void
-compute_separating_cylinder(
-    const ShapeVector& shapes, const PointCloud& pc,
-    std::vector< MiscLib::RefCountPtr< PrimitiveShape > >& extra_halfspaces)
-{
-  size_t num_primitives = shapes.size();
-
-  for (size_t i = 0; i < num_primitives; ++i) {
-    size_t id = shapes[i].first->Identifier();
-
-    // if not a torus, do not add any primitive
-    if (id != 4) continue;
-
-    // TODO HERE HERE
-
-    // Create a cylinder with:
-    // a radius equal to the major radius of the torus
-    // a direction equal to the direction of the torus
-
-    // shapes[i].first is a pointer to a PrimitiveShape
-    // I think that I need to cast it to a TorusPrimitiveShape
-    // to extract the parameters.
-
-    TorusPrimitiveShape* ts = (TorusPrimitiveShape*)(shapes[i].first->Clone());
-    Torus t = ts->Internal();
-    float mradius = t.MajorRadius();
-    Vec3f dir = t.AxisDirection();
-    Vec3f pos = t.Center();
-
-    Cylinder cyl(dir, pos, mradius);
-    CylinderPrimitiveShape* cyls = new CylinderPrimitiveShape(cyl);
-    
-    extra_halfspaces.push_back(cyls);
-  }
-}
-
-
-void
-compute_additional_halfspaces(
-    const ShapeVector& shapes, const PointCloud& pc,
-    std::vector< MiscLib::RefCountPtr< PrimitiveShape > >& extra_halfspaces,
-    const Options& opt)
-{
-  if (opt.use_separating_cylinder)
-    compute_separating_cylinder(shapes, pc, extra_halfspaces);
-  
 }
 
 
@@ -1313,8 +856,7 @@ compute_additional_halfspaces(
 bool
 write_primitives_list(
     const std::string& out_filename,
-    const ShapeVector& shapes, const PointCloud& pc,
-    const Options& opt)
+    const ShapeVector& shapes, const PointCloud& pc)
 {
   std::cout << "Saving list of fitted primitives" << std::endl;
 
@@ -1341,54 +883,33 @@ write_primitives_list(
     output << name << " ";
 
     // current primitive parameters
-    shapes[i].first->Serialize(&output);
+    shapes[i].first->Serialize(&output, false);
 
     // Serialize() is already adding a line return
     //output << std::endl;
   }
 
   
-  // compute additional halfplanes corresponding to the planes of the
-  // bounding boxes of the non-planar shapes
-  std::vector< MiscLib::RefCountPtr< PlanePrimitiveShape> > extra_halfplanes;
-  if (opt.use_AABB) {
-    compute_additional_halfplanes_FIXED(shapes, pc, extra_halfplanes);
-  } else {
-    // Fit OBB
-    compute_additional_halfplanes_OBB(shapes, pc, extra_halfplanes);
-  }
-    
+  // compute additional bounding boxes of the non-planar shapes
+  std::vector< std::vector<float> > boxes;
+  compute_additional_boxes(shapes, pc, boxes);
+
   // save these additional halfplanes to file output;
-  unsigned int num_extra_halfplanes = extra_halfplanes.size();
-  std::cout << "Number of extra halfplanes: " << num_extra_halfplanes
+  unsigned int num_boxes = boxes.size();
+  std::cout << "Number of extra boxes: " << num_boxes
             << std::endl;
-  for (unsigned int i = 0; i < num_extra_halfplanes; ++i) {
+  for (unsigned int i = 0; i < num_boxes; ++i) {
     // current extra halfplane's name
-    std::string name;
-    extra_halfplanes[i]->Description(&name);
+    std::string name = "box";
     output << name << " ";
 
-    // current extra halfplane's parameters
-    extra_halfplanes[i]->Serialize(&output, false); // by default it serializes in binary
+    // current box parameters
+    std::vector<float> curr = boxes[i];
+    for (unsigned int j=0; j<(curr.size()-1); ++j) {
+      output << curr[j] << " ";
+    }
+    output << curr[curr.size()-1] << "\n";
   }
-
-
-  // compute additional half-spaces (non-planar)
-  // for example: additional cylinder when a torus is detected
-  std::vector< MiscLib::RefCountPtr< PrimitiveShape > > extra_halfspaces;
-  compute_additional_halfspaces(shapes, pc, extra_halfspaces, opt);
-
-  // save the additional half-spaces to the output file
-  size_t num_extra_halfspaces = extra_halfspaces.size();
-  std::cout << "Number of extra halfspaces: " <<
-      num_extra_halfspaces << std::endl;
-  for (size_t i = 0; i < num_extra_halfspaces; ++i) {
-    std::string name;
-    extra_halfspaces[i]->Description(&name);
-    output << name << " ";
-    extra_halfspaces[i]->Serialize(&output, false);
-  }
-  
   
   return true;
 }
@@ -1478,6 +999,46 @@ write_globfit(
 }
 
 
+struct Options {
+  float epsilon;
+  float bitmap_epsilon;
+  float normal_threshold;
+  int min_support;
+  float probability;
+  bool use_plane;
+  bool use_sphere;
+  bool use_cylinder;
+  bool use_cone;
+  bool use_torus;
+
+  Options() {
+    epsilon = 0.01f;
+    bitmap_epsilon = 0.02f;
+    normal_threshold = 0.9f;
+    min_support = 500;
+    probability = 0.001f;
+    use_plane = true;
+    use_sphere = true;
+    use_cylinder = true;
+    use_cone = false;
+    use_torus = false;
+  }
+
+  void printOptions() {
+    std::cout << bitmap_epsilon << std::endl;
+    std::cout << epsilon << std::endl;
+    std::cout << min_support << std::endl;
+    std::cout << normal_threshold << std::endl;
+    std::cout << probability << std::endl;
+    std::cout << use_cone << std::endl;
+    std::cout << use_cylinder << std::endl;
+    std::cout << use_plane << std::endl;
+    std::cout << use_sphere << std::endl;
+    std::cout << use_torus << std::endl;
+  }
+};
+
+
 void
 compute_segmentation(
     const std::string& infn, const std::string& outfn, 
@@ -1496,10 +1057,8 @@ compute_segmentation(
   
   Vec3f min_pt, max_pt;
   compute_bbox(pc, min_pt, max_pt);
-  float bbox_len = sqrtf( powf( (max_pt[0]-min_pt[0]), 2.0) + powf( (max_pt[1]-min_pt[1]), 2.0) + powf( (max_pt[2]-min_pt[2]), 2.0) ); 
-  
   pc.setBBox(min_pt, max_pt);
-  
+
   // do the segmentation
   RansacShapeDetector::Options ransacOptions;
 
@@ -1549,58 +1108,11 @@ compute_segmentation(
   std::cerr << "detection finished " << remaining << std::endl;
 
 
-  //********************************************//
-  //    try to delete closer primitives
-  
-  std::cerr << "before merge : " << shapes.size() << std::endl;
-  std::string shape_name;
-  for( auto & in :shapes ){
-    in.first->Description(&shape_name);
-    std::cerr << shape_name << " " << in.second << std::endl;
-  }
-  
-  std::vector< MiscLib::RefCountPtr<PrimitiveShape> > primitives;
-  std::vector<PointCloud> PointClouds;
-
-  SplitPointsPrimitives( shapes, pc, primitives, PointClouds );
-
-  std::vector< MiscLib::RefCountPtr<PrimitiveShape> > merged_primitives;
-  std::vector<PointCloud> merged_PointClouds;
-
-  MergeSimilarPrimitivesFull( primitives, PointClouds, options.dist_threshold*bbox_len, options.dot_threshold, options.angle_threshold, merged_primitives, merged_PointClouds );
-  // MergeSimilarPrimitivesFull( primitives, PointClouds, 0.001, 0.9, 1.0, merged_primitives, merged_PointClouds );
-  
-  std::vector< std::pair< MiscLib::RefCountPtr< PrimitiveShape >, size_t > > merged_shapes;
-	std::pair< MiscLib::RefCountPtr< PrimitiveShape >, size_t > tmp;
-	for( int i = 0; i < merged_primitives.size(); i++ ){
-		tmp.first = merged_primitives[ i ];
-		tmp.second = merged_PointClouds[ i ].size();
-		merged_shapes.push_back(tmp);
-	}
-
-  shapes.clear();
-  shapes = merged_shapes;
-
-  pc.clear();
-  for( auto& in : merged_PointClouds ){
-    pc += in;
-  }
-  
-  std::cerr << "\nafter merge : " << static_cast<int>(shapes.size()) << std::endl;
-  for( auto& in : shapes ){
-    std::string name;
-    in.first->Description(&name);
-    std::cerr << name << " " << in.second << std::endl;
-  }
-  std::cerr << "Merged primitives " << std::endl; 
-  //********************************************//
-
-
-
   if (is_trimesh) {
     success = write_segmented_mesh(outfn, pc, shapes, trimesh);
   } else {
-    success = write_segmented_pc(outfn, pc, shapes);
+    //success = write_segmented_pc(outfn, pc, shapes);
+    success = write_segmented_xyzntl(outfn, pc, shapes);
   }
 
   if (!success) exit(1);
@@ -1611,7 +1123,7 @@ compute_segmentation(
   std::string base = outfn.substr(0, dotpos);
   std::string primitives_list_filename = base + ".fit";
   success = write_primitives_list(
-      primitives_list_filename, shapes, pc, options);
+      primitives_list_filename, shapes, pc);
 
   if (!success) exit(1);
 
@@ -1675,21 +1187,6 @@ readConf(const std::string& fname, Options& options)
     } else if (name == "use_torus")
     {
       in >> options.use_torus;
-    } else if (name == "use_AABB")
-    {
-      in >> options.use_AABB;
-    } else if (name == "use_separating_cylinder")
-    {
-      in >> options.use_separating_cylinder;
-    } else if (name == "dist_threshold")
-    {
-      in >> options.dist_threshold;
-    } else if (name == "dot_threshold")
-    {
-      in >> options.dot_threshold;
-    } else if (name == "angle_threshold")
-    {
-      in >> options.angle_threshold;
     } else 
     {
       std::cout << "Error in reading conf parameters." << std::endl;
