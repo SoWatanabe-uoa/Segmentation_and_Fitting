@@ -1,5 +1,5 @@
-function visualizeClusteredPointCloud(fileName,visualize_id, titleName)
-    fileID = fopen(fileName);
+function visualizeClusteredPointCloud(filePath,visualize_id, titleName)
+    fileID = fopen(filePath);
     num_point = fscanf(fileID, '%d', [1 1]);
 
     % Load a point-cloud with coordinates, normals, primitive ID, cluster ID
