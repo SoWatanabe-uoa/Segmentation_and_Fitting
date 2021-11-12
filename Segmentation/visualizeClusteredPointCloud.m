@@ -1,9 +1,9 @@
 function visualizeClusteredPointCloud(filePath,visualize_id, titleName)
     fileID = fopen(filePath);
-    num_point = fscanf(fileID, '%d', [1 1]);
+    %num_point = fscanf(fileID, '%d', [1 1]);
 
     % Load a point-cloud with coordinates, normals, primitive ID, cluster ID
-    pc = fscanf(fileID, '%f', [12 Inf]);
+    pc = fscanf(fileID, '%f', [8 Inf]);
     pc = pc';
     fclose(fileID);
 
@@ -12,10 +12,9 @@ function visualizeClusteredPointCloud(filePath,visualize_id, titleName)
     %When visualize_id = 'c', plot in terms of cluster ids
     switch visualize_id
         case 'p'
-            pc = append_onehotdecoded(pc);
             visualize_id = 7;
         case 'c'
-            visualize_id = 12;
+            visualize_id = 8;
         otherwise
             disp('Invalid argument');
             return;

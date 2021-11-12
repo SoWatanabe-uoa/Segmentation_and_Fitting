@@ -1,7 +1,5 @@
 function clustering1(input_fileName, output_fileName, epsilon, minpts)
 %{
-input_fileName = 'cub_m_cyl.segps';
-output_fileName = 'cub_m_cyl_clustered.segps';
 epsilon = 0.1;
 minpts = 50;
 %}
@@ -26,12 +24,15 @@ minpts = 50;
     %Remove points which doesn't belong to any clusters
     pc = pc(pc(:,12)~=-1,:);
     
+    %Decode the one-hot encoded primitive-type id
+    pc = append_onehotdecoded(pc);
+    
     %Write the clustered point-cloud data into the output file
     fileID = fopen(output_fileName,'w');
     point_num = size(pc, 1);
     fprintf(fileID,'%d\n', point_num);
     for i = 1:point_num
-        fprintf(fileID,'%f %f %f %f %f %f %d %d %d %d %d %d\n',pc(i,:));
+        fprintf(fileID,'%f %f %f %f %f %f %d %d\n',pc(i,:));
     end
     fclose(fileID);
 end

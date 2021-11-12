@@ -1,7 +1,5 @@
 function clustering2(input_fileName, output_fileName, epsilon, minpts)
 %{
-input_fileName = 'cub_m_cyl.segps';
-output_fileName = 'cub_m_cyl-clustered.segps';
 epsilon = 0.1;
 minpts = 50;
 %}
@@ -9,7 +7,7 @@ minpts = 50;
 
     %Load a point-cloud with coordinates, normals, cluster ids and primitive ids
     fileID = fopen(input_fileName,'r');
-    point_num = fscanf(fileID, '%d', [1 1]);
+    %point_num = fscanf(fileID, '%d', [1 1]);
     pc = fscanf(fileID, '%f', [8 Inf]);
     pc = pc';
     fclose(fileID);
@@ -53,12 +51,15 @@ minpts = 50;
     %Remove the extra rows
     final_pc = final_pc(2:end,:);
     
+    %Decode the one-hot encoded primitive-type id
+    final_pc = append_onehotdecoded(final_pc);
+    
     %Write the clustered point-cloud data into the output file
     fileID = fopen(output_fileName,'w');
     point_num = size(final_pc, 1);
-    fprintf(fileID,'%d\n', point_num);
+    %fprintf(fileID,'%d\n', point_num);
     for i = 1:point_num
-        fprintf(fileID,'%f %f %f %f %f %f %d %d %d %d %d %d\n',final_pc(i,:));
+        fprintf(fileID,'%f %f %f %f %f %f %d %d\n',final_pc(i,:));
     end
     fclose(fileID);
 end
