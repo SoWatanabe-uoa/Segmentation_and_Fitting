@@ -13,7 +13,7 @@ minpts = 50;
     fclose(fileID);
     
     %Normalize the spatial coordinates such that the objects fits inside the unit box centered at the origin
-    pc = normalizeSpatialCoordinate(pc);
+    [pc, bbox_len] = normalizeSpatialCoordinate(pc);
     
     % Run dbscan on points made of the points coordinates (x, y, z) and their normal coordinates (nx, ny, nz)
     cids = dbscan(pc(:,1:6), epsilon, minpts);
@@ -53,6 +53,9 @@ minpts = 50;
     
     %Decode the one-hot encoded primitive-type id
     final_pc = append_onehotdecoded(final_pc);
+    
+    %Rescale the normalized spatial coordinate by the length of the maximum side of the bounding box
+    final_pc = [final_pc(:,1:3) .* bbox_len, final_pc(:,4:8)];
     
     %Write the clustered point-cloud data into the output file
     fileID = fopen(output_fileName,'w');

@@ -1,4 +1,4 @@
-function pcout = normalizeSpatialCoordinate(pc)
+function [pcout, bbox_len] = normalizeSpatialCoordinate(pc)
 %Normalize the spatial coordinates such that the objects fits inside the unit box centered at the origin
     %Calculate the center of mass
     center = [mean(pc(:,1)), mean(pc(:,2)), mean(pc(:,3))];
@@ -9,4 +9,5 @@ function pcout = normalizeSpatialCoordinate(pc)
     side_len_max = max([ptCloud.XLimits(1,2) - ptCloud.XLimits(1,1), ptCloud.YLimits(1,2) - ptCloud.YLimits(1,1), ptCloud.ZLimits(1,2) - ptCloud.ZLimits(1,1)]);
     pc_normalized = pc_translated ./ side_len_max;
     pcout = [pc_normalized, pc(:,4:8)];
+    bbox_len = side_len_max;
 end

@@ -30,14 +30,16 @@ function segmentation(inputDirectoryName, outputDirectoryName)
         system(command);
         diary off
         movefile('ransac_log.txt',outputResultPath);
+        confPath = append(inputDataPath, '/', 'parameters.conf'); %For finalFitting()
+        copyfile(confPath, outputResultPath);
     end
     
     %Run the 2 varieties of clustering on each data obtained from RANSAC
     for i = 3 : num_data
         inputDataPath = append(outputDirectoryName, '/', inputDirectory(i).name, '/', 'pc.segps');
-        outputResultPath1 = append(outputDirectoryName, '/', inputDirectory(i).name, '/', 'pc-clustered1.segps');
+        %outputResultPath1 = append(outputDirectoryName, '/', inputDirectory(i).name, '/', 'pc-clustered1.segps');
         outputResultPath2 = append(outputDirectoryName, '/', inputDirectory(i).name, '/', 'pc-clustered2.segps');
-        clustering1(inputDataPath, outputResultPath1, 0.1, 50);
+        %clustering1(inputDataPath, outputResultPath1, 0.1, 50);
         clustering2(inputDataPath, outputResultPath2, 0.1, 50);
     end
 end

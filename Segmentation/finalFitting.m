@@ -27,7 +27,7 @@ function finalFitting(inputDirectoryName, outputDirectoryName)
         fclose(fileID);
         
         % Create the sub-directoies which include a point-cloud with
-        % normals on each cluster
+        % normals and on each cluster
         cids = curr_pc(:,8);
         uniq_cids = unique(cids);
         num_cids = length(uniq_cids);
@@ -35,30 +35,78 @@ function finalFitting(inputDirectoryName, outputDirectoryName)
             curr_id = uniq_cids(j);
             clusterDirectoryPath = append(outputDirectoryName, '/', inputDirectory(i).name, '/cluster', string(curr_id));
             mkdir(clusterDirectoryPath);
-            curr_cluster = curr_pc(curr_pc(:,8)==curr_id, 1:6);
-            %Write the current cluster data into the output file
-            output_fileName = append(clusterDirectoryPath, '/pc.xyzn');
-            fileID = fopen(output_fileName,'w');
-            point_num = size(curr_cluster, 1);
-            for k = 1:point_num
-                fprintf(fileID,'%f %f %f %f %f %f\n',curr_cluster(k,:));
+            curr_cluster = curr_pc(curr_pc(:,8)==curr_id,:);
+            uniq_pids = unique(curr_cluster(:,7));
+            if length(uniq_pids) == 1 %if points in a given cluster do NOT have different primitive types
+                % Write the current cluster data and .conf file with parameters corresponding to 
+                % the fixed primitive type into the output file
+                output_fileName = append(clusterDirectoryPath, '/pc.xyzn');
+                fileID = fopen(output_fileName,'w');
+                point_num = size(curr_cluster, 1);
+                for k = 1:point_num
+                    fprintf(fileID,'%f %f %f %f %f %f\n',curr_cluster(k,1:6));
+                end
+                fclose(fileID);
+                
+                inputConfFilePath = append(currInputDataPath, '/parameters.conf');
+                copyfile(inputConfFilePath, clusterDirectoryPath);
+                outputConfFilePath = append(clusterDirectoryPath, '/parameters.conf');
+                fileID = fopen(outputConfFilePath,'a');
+                switch uniq_pids
+                    case 0
+                        use_plane = '# bool use_plane 1';
+                        use_sphere = '# bool use_sphere 0';
+                        use_cylinder = '# bool use_cylinder 0';
+                        use_cone = '# bool use_cone 0';
+                        use_torus = '# bool use_torus 0';
+                    case 1
+                        use_plane = '# bool use_plane 0';
+                        use_sphere = '# bool use_sphere 1';
+                        use_cylinder = '# bool use_cylinder 0';
+                        use_cone = '# bool use_cone 0';
+                        use_torus = '# bool use_torus 0';
+                    case 2
+                        use_plane = '# bool use_plane 0';
+                        use_sphere = '# bool use_sphere 0';
+                        use_cylinder = '# bool use_cylinder 1';
+                        use_cone = '# bool use_cone 0';
+                        use_torus = '# bool use_torus 0';
+                    case 3
+                        use_plane = '# bool use_plane 0';
+                        use_sphere = '# bool use_sphere 0';
+                        use_cylinder = '# bool use_cylinder 0';
+                        use_cone = '# bool use_cone 1';
+                        use_torus = '# bool use_torus 0';
+                    case 4
+                        use_plane = '# bool use_plane 0';
+                        use_sphere = '# bool use_sphere 0';
+                        use_cylinder = '# bool use_cylinder 0';
+                        use_cone = '# bool use_cone 0';
+                        use_torus = '# bool use_torus 1';
+                    otherwise
+                        exit(1);
+                end
+                use_merge = '# bool use_merge 1';
+                fprintf(fileID, '\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s', use_plane, use_sphere, use_cylinder, use_cone, use_torus, use_merge);
+                fclose(fileID);
             end
-            fclose(fileID);
         end
         
-        % Run RANSAC on each cluster
+        
+        % Run RANSAC on each cluster with a fixed primitive type
         outputSubDirectoryPath = append(outputDirectoryName, '/', inputDirectory(i).name);
         clusterDirectory = dir(outputSubDirectoryPath);
         num_cluster = numel(clusterDirectory);
         for j = 3 : num_cluster
             ransacInputDataPath = append(outputSubDirectoryPath, '/', clusterDirectory(j).name);
             outputResultPath = ransacInputDataPath;
-            command = append('orig_ransac_command.exe ', ransacInputDataPath, '/', 'pc.xyzn ', outputResultPath, '/', 'pc.segps ', currInputDataPath, '/', 'parameters.conf');
+            command = append('orig_ransac_command.exe ', ransacInputDataPath, '/', 'pc.xyzn ', outputResultPath, '/', 'pc.segps ', ransacInputDataPath, '/', 'parameters.conf');
             diary ransac_log.txt
             system(command);
             diary off
             movefile('ransac_log.txt',outputResultPath);
         end
+        
         
         % Combine the results on each cluster into one .segps file
         final_pc = zeros(1,8); %initialization for concatenating matrices vertically
@@ -82,8 +130,6 @@ function finalFitting(inputDirectoryName, outputDirectoryName)
             fprintf(fileID,'%f %f %f %f %f %f %d %d\n',final_pc(j,:));
         end
         fclose(fileID);
-        
-        % Merging procedure
     end
 
 end
