@@ -1,3 +1,6 @@
+#ifndef MERGE_HEADER
+#define MERGE_HEADER
+
 #include <vector>
 #include <algorithm>
 #include <limits>
@@ -57,3 +60,5 @@ MergeSimilarPrimitivesFull(std::vector<Primitive>& primitives, std::vector<Point
 
 void SplitPointsPrimitives(const ShapeVector& shapes, const PointCloud& pc, 
 	std::vector<Primitive>& primitives, std::vector<PointCloud>& pointClouds);
+
+#endif

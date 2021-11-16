@@ -18,6 +18,8 @@
 #include <ConePrimitiveShapeConstructor.h>
 #include <TorusPrimitiveShapeConstructor.h>
 
+#include <Merge.h> //for merging procedure
+
 #include <PlanePrimitiveShape.h> // for PlanePrimitiveShape
 
 #include <basic.h> // for Vec3f
@@ -1010,6 +1012,10 @@ struct Options {
   bool use_cylinder;
   bool use_cone;
   bool use_torus;
+  bool use_merge;
+  float dist_threshold;
+  float dot_threshold;
+  float angle_threshold;
 
   Options() {
     epsilon = 0.01f;
@@ -1022,19 +1028,27 @@ struct Options {
     use_cylinder = true;
     use_cone = false;
     use_torus = false;
+    use_merge = false;
+    dist_threshold = 0.001;
+    dot_threshold = 0.9;
+    angle_threshold = 1.0;
   }
 
   void printOptions() {
-    std::cout << bitmap_epsilon << std::endl;
-    std::cout << epsilon << std::endl;
-    std::cout << min_support << std::endl;
-    std::cout << normal_threshold << std::endl;
-    std::cout << probability << std::endl;
-    std::cout << use_cone << std::endl;
-    std::cout << use_cylinder << std::endl;
-    std::cout << use_plane << std::endl;
-    std::cout << use_sphere << std::endl;
-    std::cout << use_torus << std::endl;
+    std::cout << "bitmap_epsilon: " << bitmap_epsilon << std::endl;
+    std::cout << "epsilon: " << epsilon << std::endl;
+    std::cout << "min_support: " << min_support << std::endl;
+    std::cout << "normal_threshold: " << normal_threshold << std::endl;
+    std::cout << "probability: " << probability << std::endl;
+    std::cout << "use_cone: " << use_cone << std::endl;
+    std::cout << "use_cylinder: " << use_cylinder << std::endl;
+    std::cout << "use_plane: " << use_plane << std::endl;
+    std::cout << "use_sphere: " << use_sphere << std::endl;
+    std::cout << "use_torus: " << use_torus << std::endl;
+    std::cout << "use_merge: " << use_merge << std::endl;
+    std::cout << "dist_threshold: " << dist_threshold << std::endl;
+    std::cout << "dot_threshold: " << dot_threshold << std::endl;
+    std::cout << "angle_threshold: " << angle_threshold << std::endl;
   }
 };
 
@@ -1108,6 +1122,54 @@ compute_segmentation(
   std::cerr << "detection finished " << remaining << std::endl;
 
 
+  //********************************************//
+  //    try to delete closer primitives
+  if( options.use_merge ){
+    std::cerr << "before merge : " << shapes.size() << std::endl;
+    std::string shape_name;
+    for( auto & in :shapes ){
+      in.first->Description(&shape_name);
+      std::cerr << shape_name << " " << in.second << std::endl;
+    }
+    
+    std::vector< MiscLib::RefCountPtr<PrimitiveShape> > primitives;
+    std::vector<PointCloud> PointClouds;
+
+    SplitPointsPrimitives( shapes, pc, primitives, PointClouds );
+
+    std::vector< MiscLib::RefCountPtr<PrimitiveShape> > merged_primitives;
+    std::vector<PointCloud> merged_PointClouds;
+
+    MergeSimilarPrimitivesFull( primitives, PointClouds, options.dist_threshold*pc.getScale(), options.dot_threshold, options.angle_threshold, merged_primitives, merged_PointClouds );
+    // MergeSimilarPrimitivesFull( primitives, PointClouds, 0.001, 0.9, 1.0, merged_primitives, merged_PointClouds );
+    
+    std::vector< std::pair< MiscLib::RefCountPtr< PrimitiveShape >, size_t > > merged_shapes;
+    std::pair< MiscLib::RefCountPtr< PrimitiveShape >, size_t > tmp;
+    for( int i = 0; i < merged_primitives.size(); i++ ){
+      tmp.first = merged_primitives[ i ];
+      tmp.second = merged_PointClouds[ i ].size();
+      merged_shapes.push_back(tmp);
+    }
+
+    shapes.clear();
+    shapes = merged_shapes;
+
+    pc.clear();
+    for( auto& in : merged_PointClouds ){
+      pc += in;
+    }
+    
+    std::cerr << "\nafter merge : " << static_cast<int>(shapes.size()) << std::endl;
+    for( auto& in : shapes ){
+      std::string name;
+      in.first->Description(&name);
+      std::cerr << name << " " << in.second << std::endl;
+    }
+    std::cerr << "Merged primitives " << std::endl; 
+  }
+  //********************************************//
+
+
   if (is_trimesh) {
     success = write_segmented_mesh(outfn, pc, shapes, trimesh);
   } else {
@@ -1158,7 +1220,8 @@ readConf(const std::string& fname, Options& options)
   in >> dummy >> type >> name;
   while (dummy.find("#") != std::string::npos)
   {
-    if (name == "epsilon") {
+    if (name == "epsilon") 
+    {
       in >> options.epsilon;
     } else if (name == "bitmap_epsilon")
     {
@@ -1187,6 +1250,18 @@ readConf(const std::string& fname, Options& options)
     } else if (name == "use_torus")
     {
       in >> options.use_torus;
+    } else if (name =="use_merge")
+    {
+      in >> options.use_merge;
+    } else if (name =="dist_threshold")
+    {
+      in >> options.dist_threshold;
+    } else if (name =="dot_threshold")
+    {
+      in >> options.dot_threshold;
+    } else if (name =="angle_threshold")
+    {
+      in >> options.angle_threshold;
     } else 
     {
       std::cout << "Error in reading conf parameters." << std::endl;
