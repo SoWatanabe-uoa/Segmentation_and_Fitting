@@ -36,8 +36,8 @@ function finalFitting(inputDirectoryName, outputDirectoryName)
             clusterDirectoryPath = append(outputDirectoryName, '/', inputDirectory(i).name, '/cluster', string(curr_id));
             mkdir(clusterDirectoryPath);
             curr_cluster = curr_pc(curr_pc(:,8)==curr_id,:);
-            uniq_pids = unique(curr_cluster(:,7));
-            if length(uniq_pids) == 1 %if points in a given cluster do NOT have different primitive types
+            uniq_pid = mode(unique(curr_cluster(:,7)));
+            %if length(uniq_pids) == 1 %if points in a given cluster do NOT have different primitive types
                 % Write the current cluster data and .conf file with parameters corresponding to 
                 % the fixed primitive type into the output file
                 output_fileName = append(clusterDirectoryPath, '/pc.xyzn');
@@ -52,7 +52,7 @@ function finalFitting(inputDirectoryName, outputDirectoryName)
                 copyfile(inputConfFilePath, clusterDirectoryPath);
                 outputConfFilePath = append(clusterDirectoryPath, '/parameters.conf');
                 fileID = fopen(outputConfFilePath,'a');
-                switch uniq_pids
+                switch uniq_pid
                     case 0
                         use_plane = '# bool use_plane 1';
                         use_sphere = '# bool use_sphere 0';
@@ -89,7 +89,7 @@ function finalFitting(inputDirectoryName, outputDirectoryName)
                 use_merge = '# bool use_merge 1';
                 fprintf(fileID, '\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s', use_plane, use_sphere, use_cylinder, use_cone, use_torus, use_merge);
                 fclose(fileID);
-            end
+            %end
         end
         
         
@@ -113,6 +113,7 @@ function finalFitting(inputDirectoryName, outputDirectoryName)
         for j = 3 : num_cluster
             % Load a point-cloud on each cluster
             currClusterPath = append(outputSubDirectoryPath, '/', clusterDirectory(j).name, '/pc.segps');
+            %disp(currClusterPath);
             fileID = fopen(currClusterPath,'r');
             pc = fscanf(fileID, '%f', [8 Inf]);
             pc = pc';
