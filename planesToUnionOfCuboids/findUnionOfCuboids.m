@@ -19,6 +19,8 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
             C = setOfPlanes(j,3);
             D = setOfPlanes(j,4);
             distances(i,j) = abs(A*P(1)+B*P(2)+C*P(3)+D)/norm([A,B,C]);
+            
+            %{
             bbox_len = sqrt( ...
             (inputPC.XLimits(2)-inputPC.XLimits(1))^2 + ...
             (inputPC.YLimits(2)-inputPC.XLimits(1))^2 + ...
@@ -42,6 +44,7 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
                 % signed distance < 0 if outside
                 distances(i,j) = -distances(i,j);
             end
+            %}
         end
     end
     
@@ -49,7 +52,6 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
     FitnessFcn = @(x) unionOfCuboids_fitness(x,inputPC.Count,SDF);
     my_plot = @(options,state,flag) unionOfCuboids_plot(options,state,flag,setOfPlanes);
     
-    np = size(setOfPlanes,1);
     options = optimoptions(@ga, 'PopulationType', 'custom'); %, ...
                         %'InitialPopulationRange', [1:(np-rem(np,6))/6, 1:6]);
     options = optimoptions(options,'CreationFcn',@create_unionOfCuboids, ...
@@ -58,7 +60,8 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
                         'PlotFcn', my_plot, ...
                         'MaxGenerations',500,'PopulationSize',60, ...
                         'MaxStallGenerations',200,'UseVectorized',true);
-                        
-    numberOfVariables = np;
+                    
+    np = size(setOfPlanes,1);    
+    numberOfVariables = np/6; % Number of cuboids
     [x,fval,reason,output] = ga(FitnessFcn,numberOfVariables,[],[],[],[],[],[],[],options)
 end

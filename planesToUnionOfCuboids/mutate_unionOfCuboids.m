@@ -1,8 +1,6 @@
 function mutationChildren = mutate_unionOfCuboids(parents ,options,NVARS, ...
     FitnessFcn, state, thisScore,thisPopulation,mutationRate)
-%   MUTATE_PERMUTATION Custom mutation function for traveling salesman.
-%   MUTATIONCHILDREN = MUTATE_PERMUTATION(PARENTS,OPTIONS,NVARS, ...
-%   FITNESSFCN,STATE,THISSCORE,THISPOPULATION,MUTATIONRATE) mutate the
+%   This function mutates the
 %   PARENTS to produce mutated children MUTATIONCHILDREN.
 %
 %   The arguments to the function are 
@@ -15,20 +13,20 @@ function mutationChildren = mutate_unionOfCuboids(parents ,options,NVARS, ...
 %     THISPOPULATION: Matrix of individuals in the current population
 %     MUTATIONRATE: Rate of mutation
 
-
-    % Here we swap a plane of a cuboid and a plane of another cuboid in
-    % each creature(union of cuboids)
     mutationChildren = cell(length(parents),1);% Normally zeros(length(parents),NVARS);
+    numOfCuboids = NVARS;
+
     for i=1:length(parents)
         parent = thisPopulation{parents(i)}; % Normally thisPopulation(parents(i),:)
-        cuboids = 1:size(parent,1);
-        if(numel(cuboids) > 1)
-            picked_cuboids = randsample(cuboids, 2); % Pick 2 cuboids at random
-            p = randi(6);
-            child = parent;
-            child(picked_cuboids(1),p) = parent(picked_cuboids(2),p);
-            child(picked_cuboids(2),p) = parent(picked_cuboids(1),p);
-            mutationChildren{i} = child; % Normally mutationChildren(i,:)
-        end
+        % Randomly select a plane in a cuboid and replace it by another plane (picked at random)
+        
+        % Randomly select a cuboid in a creature, and replace it by a new randomly formed cuboid
+        numOfMutatedCuboid = randi(numOfCuboids);
+        child = parent;
+        child(numOfMutatedCuboid,:) = randsample(numOfCuboids*6,6);
+        mutationChildren{i} = child; % Normally mutationChildren(i,:)
+        
+        % Randomly create a new creature (set of cuboids)
+        
     end
 end

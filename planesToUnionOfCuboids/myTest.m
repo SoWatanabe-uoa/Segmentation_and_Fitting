@@ -1,4 +1,5 @@
-function setOfPlanes = myTest(inputDataName)
+%function setOfPlanes = myTest(inputDataName)
+inputDataName = 'cub_minus_cyl';
     inputDirectory = dir(inputDataName);
     
     % Remove files instead of directories
@@ -16,7 +17,7 @@ function setOfPlanes = myTest(inputDataName)
         % Load data if the current cluster is labeled into plane.
         currClusterPath = append(inputDataName, '/', inputDirectory(i).name);
         currPriInfoPath = append(currClusterPath, '/pc.fit');
-        fileID = fopen(currPriInfoPath,'r');
+        fileID = fopen(currPriInfoPath,'r'); %After reading 'plane', read plane parameter
         currPriType = fscanf(fileID, '%s', [1 1]);
         if strcmp(currPriType, 'plane')
             planeInfo = fscanf(fileID, '%f', [4 1]);
@@ -34,7 +35,7 @@ function setOfPlanes = myTest(inputDataName)
             % Load info about the plane
             xlim = [min(curr_pc(:,1)), max(curr_pc(:,1))];
             ylim = [min(curr_pc(:,2)), max(curr_pc(:,2))];
-            setOfPlanes = [setOfPlanes; i-2, planeInfo, xlim, ylim];
+            setOfPlanes = [setOfPlanes; i-2, planeInfo, xlim, ylim]; % the idx of the 1st data starts from 3
         else
             fclose(fileID);
         end
@@ -43,5 +44,5 @@ function setOfPlanes = myTest(inputDataName)
     setOfPlanes = setOfPlanes(2:end,:);  %Remove the extra rows
     inputPC = pointCloud(input_pc(:,1:3), 'Normal', input_pc(:,4:6));
     
-    findUnionOfCuboids(inputPC,setOfPlanes(:,2:9));
-end
+    %findUnionOfCuboids(inputPC,setOfPlanes(:,2:9));
+%end

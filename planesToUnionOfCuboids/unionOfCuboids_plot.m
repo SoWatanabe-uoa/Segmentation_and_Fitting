@@ -13,6 +13,7 @@ function state = unionOfCuboids_plot(options,state,flag,setOfPlanes)
 
 [unused,idx] = min(state.Score);
 unionOfCuboids = state.Population{idx};
+disp('Result')
 disp(unionOfCuboids)
 
 for i = 1:size(unionOfCuboids,1)
