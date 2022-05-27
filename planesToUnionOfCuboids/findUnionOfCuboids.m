@@ -7,6 +7,8 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
     %       0. The 5th and 6th are the min and max of x coordinate in
     %       the point-cloud labeled into the plane. The 7th and 8th are the min
     %       and max of y coordinate in the point-cloud labeled into the plane.
+    %       The 9th and 10th are the min and max of z coordinate 
+    %       in the point-cloud labeled into the plane.
     
     % Calculate signed distances between points and planes
     distances = zeros(inputPC.Count,size(setOfPlanes,1));
@@ -18,7 +20,9 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
             B = setOfPlanes(j,2);
             C = setOfPlanes(j,3);
             D = setOfPlanes(j,4);
-            distances(i,j) = abs(A*P(1)+B*P(2)+C*P(3)+D)/norm([A,B,C]);
+            distances(i,j) = (A*P(1)+B*P(2)+C*P(3)+D)/norm([A,B,C]);
+            %distances using opposite normal direction
+            
             
             %{
             bbox_len = sqrt( ...
@@ -58,10 +62,10 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
                         'CrossoverFcn',@crossover_unionOfCuboids, ...
                         'MutationFcn',@mutate_unionOfCuboids, ...
                         'PlotFcn', my_plot, ...
-                        'MaxGenerations',500,'PopulationSize',60, ...
-                        'MaxStallGenerations',200,'UseVectorized',true);
+                        'MaxGenerations',100,'PopulationSize',60, ...
+                        'MaxStallGenerations',40,'UseVectorized',true);
                     
     np = size(setOfPlanes,1);    
     numberOfVariables = np/6; % Number of cuboids
-    [x,fval,reason,output] = ga(FitnessFcn,numberOfVariables,[],[],[],[],[],[],[],options)
+    [x,fval,reason,output] = ga(FitnessFcn,numberOfVariables,[],[],[],[],[],[],[],options);
 end

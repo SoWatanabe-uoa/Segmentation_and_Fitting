@@ -28,8 +28,8 @@ function xoverKids  = crossover_unionOfCuboids(parents,options,NVARS, ...
         % Two-point crossover of parent1 and parent2:
         % Exchange subsets of cuboids between the two creatures
         numOfCrossoveredCuboid = randi(numOfCuboids);
-        p1 = ceil((6-1) * rand);
-        p2 = p1 + ceil((6-p1-1) * rand);
+        p1 = ceil((6-1) * rand);%randi
+        p2 = p1 + ceil((6-p1-1) * rand); %randi
         child = parent1;
         child(numOfCrossoveredCuboid,p1:p2) = parent2(numOfCrossoveredCuboid,p1:p2);
         xoverKids{i} = child; % Normally, xoverKids(i,:);

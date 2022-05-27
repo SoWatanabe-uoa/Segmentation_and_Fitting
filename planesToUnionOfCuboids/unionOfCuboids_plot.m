@@ -10,42 +10,50 @@ function state = unionOfCuboids_plot(options,state,flag,setOfPlanes)
 %       0. The 5th and 6th are the min and max of x coordinate in
 %       the point-cloud labeled into the plane. The 7th and 8th are the min
 %       and max of y coordinate in the point-cloud labeled into the plane.
+%       The 9th and 10th are the min and max of z coordinate 
+%       in the point-cloud labeled into the plane.
 
-[unused,idx] = min(state.Score);
-unionOfCuboids = state.Population{idx};
-disp('Result')
-disp(unionOfCuboids)
+    [unused,idx] = min(state.Score);
+    unionOfCuboids = state.Population{idx};
+    disp('Result')
+    disp(unionOfCuboids)
 
-for i = 1:size(unionOfCuboids,1)
-    cuboid = unionOfCuboids(i,:);
-    
-    for j = 1:6
-        %Find all coefficients of plane equation    
-        A = setOfPlanes(cuboid(j),1);
-        B = setOfPlanes(cuboid(j),2);
-        C = setOfPlanes(cuboid(j),3);
-        D = setOfPlanes(cuboid(j),4);
-        %Decide on a suitable showing range
-        xLim = [setOfPlanes(cuboid(j),5:6)];
-        yLim = [setOfPlanes(cuboid(j),7:8)];
-        
-        %{
-        check = ['A=',num2str(A),' B=',num2str(B),' C=',num2str(C), ' D=',num2str(D), ...
-            ' Xlim=',num2str(xLim), ' Ylim=',num2str(yLim),];
-        disp(check)
-        %}
-        
-        [X,Y] = meshgrid(xLim,yLim);
-        Z = (A * X + B * Y + D)/ (-C);
-        reOrder = [1 2 4 3 1];
-        %check = [X(reOrder),Y(reOrder),Z(reOrder)];
-        %disp(check)
-        plot3(X(reOrder),Y(reOrder),Z(reOrder));
-        hold on
+    for i = 1:size(unionOfCuboids,1)
+        cuboid = unionOfCuboids(i,:);
+
+        for j = 1:6
+            %Find all coefficients of plane equation    
+            A = setOfPlanes(cuboid(j),1);
+            B = setOfPlanes(cuboid(j),2);
+            C = setOfPlanes(cuboid(j),3);
+            D = setOfPlanes(cuboid(j),4);
+            %Decide on a suitable showing range
+            xLim = [setOfPlanes(cuboid(j),5:6)];
+            yLim = [setOfPlanes(cuboid(j),7:8)];
+            zLim = [setOfPlanes(cuboid(j),9:10)];
+
+            %{
+            check = ['A=',num2str(A),' B=',num2str(B),' C=',num2str(C), ' D=',num2str(D), ...
+                ' Xlim=',num2str(xLim), ' Ylim=',num2str(yLim),];
+            disp(check)
+            %}
+
+            [X,Y] = meshgrid(xLim,yLim);
+            Z = (A * X + B * Y + D)/ (-C);
+            if(Z < zLim(1))
+                Z = zLim(1);
+            elseif(Z > zLim(2))
+                Z = zLim(2);
+            end
+            reOrder = [1 2 4 3 1];
+            %check = [X(reOrder),Y(reOrder),Z(reOrder)];
+            %disp(check)
+            %plot3(X(reOrder),Y(reOrder),Z(reOrder));
+            hold on
+        end
     end
-end
-hold off
-grid on
+    hold off
+    grid on
 
 
 end
