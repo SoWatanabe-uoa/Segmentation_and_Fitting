@@ -25,13 +25,13 @@ function xoverKids  = crossover_unionOfCuboids(parents,options,NVARS, ...
         parent2 = thisPopulation{parents(index+1)};
         index = index + 2;
 
-        % Two-point crossover of parent1 and parent2:
-        % Exchange subsets of cuboids between the two creatures
-        numOfCrossoveredCuboid = randi(numOfCuboids);
-        p1 = ceil((6-1) * rand);%randi
-        p2 = p1 + ceil((6-p1-1) * rand); %randi
+        %Picking one cuboid in one creature, another cuboid in the other creature, and exchanging the planes.
+        indicesOfCrossoveredCuboids = randsample(numOfCuboids,2);
+        % Two-point crossover
+        p1 = randi(5);
+        p2 = randi([(p1+1) 6]);
         child = parent1;
-        child(numOfCrossoveredCuboid,p1:p2) = parent2(numOfCrossoveredCuboid,p1:p2);
+        child(indicesOfCrossoveredCuboids(1),p1:p2) = parent2(indicesOfCrossoveredCuboids(2),p1:p2);
         xoverKids{i} = child; % Normally, xoverKids(i,:);
     end
 end
