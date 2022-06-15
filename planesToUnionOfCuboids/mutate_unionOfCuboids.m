@@ -41,9 +41,9 @@ function mutationChildren = mutate_unionOfCuboids(parents ,options,NVARS, ...
         
         % Randomly create a new creature (set of cuboids)
         elseif((alpha+beta) < probability && probability < 1)
-            newUnionOfCuboids = zeros(numOfCuboids,6);
+            newUnionOfCuboids = zeros(numOfCuboids,6);  
             for j = 1:numOfCuboids
-                unionOfCuboids(j,:) = randsample(numOfCuboids*6,6); 
+                newUnionOfCuboids(j,:) = randsample(numOfCuboids*6,6); 
             end
             mutationChildren{i} = newUnionOfCuboids; % Normally mutationChildren(i,:)
         end

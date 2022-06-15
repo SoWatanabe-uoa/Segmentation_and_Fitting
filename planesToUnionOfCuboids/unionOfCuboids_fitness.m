@@ -13,6 +13,7 @@ function scores = unionOfCuboids_fitness(x,num_point,SDF)
         f = 0.0;
         for i = 1:num_point
             f = f + exp(-1*SDF(i,unionOfCuboids));
+            % Later: Consider whether orthogonal 
         end
         %disp(f)
         scores(j) = -f;

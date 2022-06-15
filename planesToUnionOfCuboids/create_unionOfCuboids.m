@@ -20,6 +20,7 @@ function pop = create_unionOfCuboids(NVARS,FitnessFcn,options)
         %}
         unionOfCuboids = zeros(numOfCuboids,6);
         for j = 1:numOfCuboids
+            
             unionOfCuboids(j,:) = randsample(numOfCuboids*6,6); 
         end
         

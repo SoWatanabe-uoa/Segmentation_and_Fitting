@@ -21,7 +21,6 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
             C = setOfPlanes(j,3);
             D = setOfPlanes(j,4);
             distances(i,j) = (A*P(1)+B*P(2)+C*P(3)+D)/norm([A,B,C]);
-            %distances using opposite normal direction
             
             
             %{
@@ -63,7 +62,7 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
                         'MutationFcn',@mutate_unionOfCuboids, ...
                         'PlotFcn', my_plot, ...
                         'MaxGenerations',100,'PopulationSize',60, ...
-                        'MaxStallGenerations',40,'UseVectorized',true);
+                        'MaxStallGenerations',40,'UseVectorized',true); %set Tolerance
                     
     np = size(setOfPlanes,1);    
     numberOfVariables = np/6; % Number of cuboids
