@@ -5,7 +5,7 @@ function state = unionOfCuboids_plot(options,state,flag,setOfPlanes)
 %   to the traveling salesman problem.
 %
 %   The inputs are
-%       setOfPlanes: (Number of planes)x8 Matrix. The 1st to 4th column
+%       setOfPlanes: (Number of planes)x10 Matrix. The 1st to 4th column
 %       values are the cofficients of the plane equation ax + by + cz + d =
 %       0. The 5th and 6th are the min and max of x coordinate in
 %       the point-cloud labeled into the plane. The 7th and 8th are the min
@@ -18,9 +18,49 @@ function state = unionOfCuboids_plot(options,state,flag,setOfPlanes)
     %disp('Result')
     %disp(unionOfCuboids)
     
-    % Calculate the bounding box from max & min value of xyz coordinates of the
-    % point in a given input PC
+    % Determine the bounding box surrounding the obtained union of cuboids 
+    xLim = [Inf,-Inf];
+    yLim = [Inf,-Inf];
+    zLim = [Inf,-Inf];
+    for i = 1:size(unionOfCuboids,1)
+        cuboid = unionOfCuboids(i,:);
+        for j = 1:6
+            if xLim(1) > setOfPlanes(cuboid(j),5)
+                xLim(1) = setOfPlanes(cuboid(j),5); %xmin
+            end
+            if xLim(2) < setOfPlanes(cuboid(j),6)
+                xLim(2) = setOfPlanes(cuboid(j),6); %xmax
+            end
+            if yLim(1) > setOfPlanes(cuboid(j),7)
+                yLim(1) = setOfPlanes(cuboid(j),7); %ymin
+            end
+            if yLim(2) < setOfPlanes(cuboid(j),8)
+                yLim(2) = setOfPlanes(cuboid(j),8); %ymax
+            end
+            if zLim(1) > setOfPlanes(cuboid(j),9)
+                zLim(1) = setOfPlanes(cuboid(j),9); %zmin
+            end
+            if zLim(2) < setOfPlanes(cuboid(j),10)
+                zLim(2) = setOfPlanes(cuboid(j),10); %zmax
+            end
+        end
+    end
+    %}
     
+    %Create the regular 3D grid
+    interval = 20;
+    x = xLim(1):(xLim(2)-xLim(1))/interval:xLim(2);
+    y = yLim(1):(yLim(2)-yLim(1))/interval:yLim(2);
+    z = zLim(1):(zLim(2)-zLim(1))/interval:zLim(2);
+    [X,Y,Z] = meshgrid(x,y,z);
+    
+    % Calculate signed distances between nodes of the regular grid and
+    % union of cuboids
+    V = createVolumeData(x,y,z,unionOfCuboids,setOfPlanes);
+    
+    isosurface(X,Y,Z,V,0.0);
+    grid on
+    %{
     for i = 1:size(unionOfCuboids,1)
         cuboid = unionOfCuboids(i,:);
         for j = 1:6
@@ -40,10 +80,18 @@ function state = unionOfCuboids_plot(options,state,flag,setOfPlanes)
             y = yLim(1):(yLim(2)-yLim(1))/interval:yLim(2);
             z = zLim(1):(zLim(2)-zLim(1))/interval:zLim(2);
             [X,Y,Z] = meshgrid(x,y,z);
-            
             % When AX+BY+CZ+D = 0, return 1(true) at the 3D coodinate in
             % the bounding box.
-            V = (-1e-3 < (A*X+B*Y+C*Z+D) && (A*X+B*Y+C*Z+D) < 1e-3);
+            V = zeros(numel(x),numel(y),numel(z));
+            for k = 1:numel(x)
+                for l = 1:numel(y)
+                    for m = 1:numel(z)
+                        if (-1e-3 < (A*X+B*Y+C*Z+D)) && ((A*X+B*Y+C*Z+D) < 1e-3)
+                            V(k,l,m) = 1;
+                        end
+                    end
+                end
+            end
             isosurface(x,y,z,V,1);
             hold on
         end
@@ -51,7 +99,6 @@ function state = unionOfCuboids_plot(options,state,flag,setOfPlanes)
     hold off
     grid on
     
-    %{
     for i = 1:size(unionOfCuboids,1)
         cuboid = unionOfCuboids(i,:);
 

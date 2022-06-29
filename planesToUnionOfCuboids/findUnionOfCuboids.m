@@ -14,7 +14,7 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
     distances = zeros(inputPC.Count,size(setOfPlanes,1));
     for i = 1:inputPC.Count
         P = [inputPC.Location(i,1), inputPC.Location(i,2), inputPC.Location(i,3)];
-        N = [inputPC.Normal(i,1), inputPC.Normal(i,2), inputPC.Normal(i,3)];
+        %N = [inputPC.Normal(i,1), inputPC.Normal(i,2), inputPC.Normal(i,3)];
         for j = 1:size(setOfPlanes,1)
             A = setOfPlanes(j,1);
             B = setOfPlanes(j,2);
