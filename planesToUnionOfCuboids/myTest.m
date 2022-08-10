@@ -30,13 +30,20 @@ function setOfPlanes = myTest(inputDataName)
             curr_pc = fscanf(fileID, '%f', [8 Inf]);
             curr_pc = curr_pc';
             fclose(fileID);
+            
+            %Denoise
+           %[denoised_pc,inlierIndices,outlierIndices] = pcdenoise(pointCloud(curr_pc(:,1:3)));
+            %curr_pc = curr_pc(inlierIndices,:);
+            %figure
+            %pcshow(pointCloud(curr_pc(:,1:3)));
             input_pc = [input_pc; curr_pc];
             
             % Load info about the plane
             xlim = [min(curr_pc(:,1)), max(curr_pc(:,1))];
             ylim = [min(curr_pc(:,2)), max(curr_pc(:,2))];
             zlim = [min(curr_pc(:,3)), max(curr_pc(:,3))];
-            setOfPlanes = [setOfPlanes; i-2, planeInfo, xlim, ylim, zlim]; % the idx of the 1st data starts from 3
+            setOfPlanes = [setOfPlanes; 2*(i-2)-1, planeInfo, xlim, ylim, zlim]; % the idx of the 1st data starts from 3
+            setOfPlanes = [setOfPlanes; 2*(i-2), (-1.0)*planeInfo, xlim, ylim, zlim]; % in the case of the oposite direction of the normal
         else
             fclose(fileID);
         end

@@ -1,5 +1,6 @@
 function V = createVolumeData(x,y,z,unionOfCuboids,setOfPlanes)
     % Inputs are 
+    %unionOfCuboid : x : best creature
     %  
     % Output are
     
@@ -17,7 +18,7 @@ function V = createVolumeData(x,y,z,unionOfCuboids,setOfPlanes)
                     B = setOfPlanes(l,2);
                     C = setOfPlanes(l,3);
                     D = setOfPlanes(l,4);
-                    distances(pointIndex,l) = (A*P(1)+B*P(2)+C*P(3)+D)/norm([A,B,C]);
+                    distances(pointIndex,l) = (A*P(1)+B*P(2)+C*P(3)-D)/norm([A,B,C]);
                 end
                 pointIndex = pointIndex + 1;
             end
@@ -32,24 +33,25 @@ function V = createVolumeData(x,y,z,unionOfCuboids,setOfPlanes)
             for k = 1:numel(z)
                 d_Cs = zeros(size(unionOfCuboids,1),1);
                 for l = 1:numel(d_Cs)
-                    %disp(min(unionOfCuboids(i, :)));
-                    %disp(max(unionOfCuboids(i, :)));
-                    % Consider the signed distance when the normal direction
-                    % become oppesite.
+                    dis_min = Inf;
+                    index_min = 0;
+                    for m = 1:6
+                        if dis_min > abs( distances(pointIndex,unionOfCuboids(l,m)) )
+                            dis_min = abs( distances(pointIndex,unionOfCuboids(l,m)) );
+                            index_min = m;
+                        end
+                    end
+                    d_Cs(l) = distances(pointIndex,unionOfCuboids(l,index_min));
+                    %{
                     d_Cs(l) = min([
-                            distances(pointIndex,unionOfCuboids(l,1)), ...
-                            (-1)*distances(pointIndex,unionOfCuboids(l,1)), ...
-                            distances(pointIndex,unionOfCuboids(l,2)), ...
-                            (-1)*distances(pointIndex,unionOfCuboids(l,2)), ...
-                            distances(pointIndex,unionOfCuboids(l,3)), ...
-                            (-1)*distances(pointIndex,unionOfCuboids(l,3)), ...
-                            distances(pointIndex,unionOfCuboids(l,4)), ...
-                            (-1)*distances(pointIndex,unionOfCuboids(l,4)), ...
-                            distances(pointIndex,unionOfCuboids(l,5)), ...
-                            (-1)*distances(pointIndex,unionOfCuboids(l,5)), ...
-                            distances(pointIndex,unionOfCuboids(l,6)), ...
-                            (-1)*distances(pointIndex,unionOfCuboids(l,6))
-                        ]);
+                        distances(pointIndex,unionOfCuboids(l,1)), ...
+                        distances(pointIndex,unionOfCuboids(l,2)), ...
+                        distances(pointIndex,unionOfCuboids(l,3)), ...
+                        distances(pointIndex,unionOfCuboids(l,4)), ...
+                        distances(pointIndex,unionOfCuboids(l,5)), ...
+                        distances(pointIndex,unionOfCuboids(l,6))
+                    ]);
+                    %}
                 end
                 V(i,j,k) = max(d_Cs);
                 pointIndex = pointIndex + 1;

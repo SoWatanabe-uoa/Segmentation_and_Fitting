@@ -29,21 +29,24 @@ function mutationChildren = mutate_unionOfCuboids(parents ,options,NVARS, ...
             indexOfMutatedCuboid = randi(numOfCuboids);
             indexOMutatedPlane = randi(6);
             child = parent;
-            child(indexOfMutatedCuboid,indexOMutatedPlane) = randsample(numOfCuboids*6,1);
+            % We multiple by 2 since we consider both of the given normal direction and the oposite direction.
+            child(indexOfMutatedCuboid,indexOMutatedPlane) = randsample(numOfCuboids*6*2,1);
             mutationChildren{i} = child; % Normally mutationChildren(i,:)
         
         % Randomly select a cuboid in a creature, and replace it by a new randomly formed cuboid
         elseif(alpha < probability && probability < (alpha+beta))
             indexOfMutatedCuboid = randi(numOfCuboids);
             child = parent;
-            child(indexOfMutatedCuboid,:) = randsample(numOfCuboids*6,6);
+            % We multiple by 2 since we consider both of the given normal direction and the oposite direction.
+            child(indexOfMutatedCuboid,:) = randsample(numOfCuboids*6*2,6);
             mutationChildren{i} = child; % Normally mutationChildren(i,:)
         
         % Randomly create a new creature (set of cuboids)
         elseif((alpha+beta) < probability && probability < 1)
             newUnionOfCuboids = zeros(numOfCuboids,6);  
             for j = 1:numOfCuboids
-                newUnionOfCuboids(j,:) = randsample(numOfCuboids*6,6); 
+                % We multiple by 2 since we consider both of the given normal direction and the oposite direction.
+                newUnionOfCuboids(j,:) = randsample(numOfCuboids*6*2,6); 
             end
             mutationChildren{i} = newUnionOfCuboids; % Normally mutationChildren(i,:)
         end

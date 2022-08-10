@@ -20,51 +20,27 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
             B = setOfPlanes(j,2);
             C = setOfPlanes(j,3);
             D = setOfPlanes(j,4);
-            distances(i,j) = (A*P(1)+B*P(2)+C*P(3)+D)/norm([A,B,C]);
-            
-            
-            %{
-            bbox_len = sqrt( ...
-            (inputPC.XLimits(2)-inputPC.XLimits(1))^2 + ...
-            (inputPC.YLimits(2)-inputPC.XLimits(1))^2 + ...
-            (inputPC.ZLimits(2)-inputPC.ZLimits(1))^2 );
-            % Check if the segment PR parallel to the line (x,y,z) = p + tn(t>0) intersects the plane
-            % Point Q on the plane and R on the line (x,y,z) = p + tn(t>0)
-            Q = [-A*D, -B*D, -C*D];
-            R = [P(1)+bbox_len*N(1), P(2)+bbox_len*N(2), P(3)+bbox_len*N(3)];
-
-            % QP QR vector
-            QP = [P(1)-Q(1),P(2)-Q(2),P(3)-Q(3)];
-            QR = [R(1)-Q(1),R(2)-Q(2),R(3)-Q(3)];
-
-            dot_QP_planeNormal = dot(QP,[A,B,C]);
-            dot_QR_planeNormal = dot(QR,[A,B,C]);
-            
-            if (dot_QP_planeNormal >= 0.0 && dot_QR_planeNormal <= 0.0) || ...
-                (dot_QP_planeNormal <= 0.0 && dot_QR_planeNormal >= 0.0)
-                 % signed distance > 0 if inside
-            else
-                % signed distance < 0 if outside
-                distances(i,j) = -distances(i,j);
-            end
-            %}
+            distances(i,j) = (A*P(1)+B*P(2)+C*P(3)-D)/norm([A,B,C]);
         end
     end
     
     SDF = @(pointIndex,unionOfCuboids) signedDistanceFunc(pointIndex,unionOfCuboids,distances);
     FitnessFcn = @(x) unionOfCuboids_fitness(x,inputPC.Count,SDF);
-    my_plot = @(options,state,flag) unionOfCuboids_plot(options,state,flag,setOfPlanes);
+    %my_plot = @(options,state,flag) unionOfCuboids_plot(options,state,flag,setOfPlanes);
     
     options = optimoptions(@ga, 'PopulationType', 'custom'); %, ...
                         %'InitialPopulationRange', [1:(np-rem(np,6))/6, 1:6]);
     options = optimoptions(options,'CreationFcn',@create_unionOfCuboids, ...
                         'CrossoverFcn',@crossover_unionOfCuboids, ...
                         'MutationFcn',@mutate_unionOfCuboids, ...
-                        'PlotFcn', my_plot, ...
-                        'MaxGenerations',100,'PopulationSize',60, ...
-                        'MaxStallGenerations',40,'UseVectorized',true); %set Tolerance
+                        'MaxGenerations',50,'PopulationSize',60, ...
+                        'MaxStallGenerations',20,'UseVectorized',true); %set Tolerance
                     
     np = size(setOfPlanes,1);    
-    numberOfVariables = np/6; % Number of cuboids
-    [x,fval,reason,output] = ga(FitnessFcn,numberOfVariables,[],[],[],[],[],[],[],options);
+    numberOfVariables = (np/6)/2; % Number of cuboids. We divide by 2 since we consider both of the given normal direction and the oposite direction.
+    [x,fval,reason,output] = ga(FitnessFcn,numberOfVariables,[],[],[],[],[],[],[],options)
+    unionOfCuboids = x{1};
+    disp('Result');
+    disp(unionOfCuboids);
+    unionOfCuboids_plot(unionOfCuboids,setOfPlanes);
 end

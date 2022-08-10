@@ -20,10 +20,9 @@ function pop = create_unionOfCuboids(NVARS,FitnessFcn,options)
         %}
         unionOfCuboids = zeros(numOfCuboids,6);
         for j = 1:numOfCuboids
-            
-            unionOfCuboids(j,:) = randsample(numOfCuboids*6,6); 
+            % We multiple by 2 since we consider both of the given normal direction and the oposite direction.
+            unionOfCuboids(j,:) = randsample(numOfCuboids*6*2,6); 
         end
-        
         pop{i} = unionOfCuboids;
     end
 end
