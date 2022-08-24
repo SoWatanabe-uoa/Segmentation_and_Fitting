@@ -60,7 +60,7 @@ function state = unionOfCuboids_plot(unionOfCuboids,setOfPlanes)
     
     % Calculate signed distances between nodes of the regular grid and
     % union of cuboids
-    V = createVolumeData(x,y,z,unionOfCuboids,setOfPlanes);
+    V = createVolumeData(X,Y,Z,unionOfCuboids,setOfPlanes);
     
     %disp(V(1:101,1:101,1:3))
     figure

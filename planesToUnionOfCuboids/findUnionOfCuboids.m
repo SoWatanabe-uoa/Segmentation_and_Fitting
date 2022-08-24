@@ -33,10 +33,10 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
     options = optimoptions(options,'CreationFcn',@create_unionOfCuboids, ...
                         'CrossoverFcn',@crossover_unionOfCuboids, ...
                         'MutationFcn',@mutate_unionOfCuboids, ...
-                        'MaxGenerations',50,'PopulationSize',60, ...
-                        'MaxStallGenerations',20,'UseVectorized',true); %set Tolerance
+                        'MaxGenerations',50,'PopulationSize',120, ...  % MaxGenerations:MaxStallGenerations = 5:2 PopulationSize:60
+                        'MaxStallGenerations', 20,'UseVectorized',true); %set Tolerance
                     
-    np = size(setOfPlanes,1);    
+    np = size(setOfPlanes,1);   
     numberOfVariables = (np/6)/2; % Number of cuboids. We divide by 2 since we consider both of the given normal direction and the oposite direction.
     [x,fval,reason,output] = ga(FitnessFcn,numberOfVariables,[],[],[],[],[],[],[],options)
     unionOfCuboids = x{1};

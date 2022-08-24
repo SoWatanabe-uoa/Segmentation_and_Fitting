@@ -1,18 +1,20 @@
-function V = createVolumeData(x,y,z,unionOfCuboids,setOfPlanes)
+function V = createVolumeData(X,Y,Z,unionOfCuboids,setOfPlanes)
     % Inputs are 
     %unionOfCuboid : x : best creature
     %  
     % Output are
-    
-    V = ones(numel(x), numel(y), numel(z) ); %Initialize V
+    nx = size(X, 1);
+    ny = size(X, 2);
+    nz = size(X, 3);
+    V = ones(nx, ny, nz); %Initialize V
     
     %Calculate signed distances between nodes of the regular grid and planes
-    distances = zeros(numel(x)*numel(y)*numel(z),size(setOfPlanes,1));
+    distances = zeros(nx*ny*nz,size(setOfPlanes,1));
     pointIndex = 1;
-    for i = 1:numel(x)
-        for j = 1:numel(y)
-            for k = 1:numel(z)           
-                P = [x(i), y(j), z(k)];
+    for i = 1:nx
+        for j = 1:ny
+            for k = 1:nz           
+                P = [X(i,j,k), Y(i,j,k), Z(i,j,k)];
                 for l = 1:size(setOfPlanes,1)
                     A = setOfPlanes(l,1);
                     B = setOfPlanes(l,2);
@@ -28,11 +30,12 @@ function V = createVolumeData(x,y,z,unionOfCuboids,setOfPlanes)
     % Calculate signed distances between nodes of the regular grid and
     % union of cuboids
     pointIndex = 1;
-    for i = 1:numel(x)
-        for j = 1:numel(y)
-            for k = 1:numel(z)
+    for i = 1:nx
+        for j = 1:ny
+            for k = 1:nz
                 d_Cs = zeros(size(unionOfCuboids,1),1);
                 for l = 1:numel(d_Cs)
+                    %{
                     dis_min = Inf;
                     index_min = 0;
                     for m = 1:6
@@ -42,7 +45,8 @@ function V = createVolumeData(x,y,z,unionOfCuboids,setOfPlanes)
                         end
                     end
                     d_Cs(l) = distances(pointIndex,unionOfCuboids(l,index_min));
-                    %{
+                    %}
+                    
                     d_Cs(l) = min([
                         distances(pointIndex,unionOfCuboids(l,1)), ...
                         distances(pointIndex,unionOfCuboids(l,2)), ...
@@ -51,7 +55,7 @@ function V = createVolumeData(x,y,z,unionOfCuboids,setOfPlanes)
                         distances(pointIndex,unionOfCuboids(l,5)), ...
                         distances(pointIndex,unionOfCuboids(l,6))
                     ]);
-                    %}
+                    
                 end
                 V(i,j,k) = max(d_Cs);
                 pointIndex = pointIndex + 1;
