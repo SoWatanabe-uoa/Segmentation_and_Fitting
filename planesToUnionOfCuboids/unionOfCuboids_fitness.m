@@ -16,6 +16,8 @@ function scores = unionOfCuboids_fitness(x,num_point,SDF)
             % Later: Consider whether orthogonal 
         end
         %disp(f)
+        % inside or outside
+        % 
         scores(j) = -f;
     end
 end

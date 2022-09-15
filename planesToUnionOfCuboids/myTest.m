@@ -18,36 +18,39 @@ function setOfPlanes = myTest(inputDataName)
         currClusterPath = append(inputDataName, '/', inputDirectory(i).name);
         currPriInfoPath = append(currClusterPath, '/pc.fit');
         fileID = fopen(currPriInfoPath,'r'); %After reading 'plane', read plane parameter
-        currPriType = fscanf(fileID, '%s', [1 1]);
-        if strcmp(currPriType, 'plane')
-            planeInfo = fscanf(fileID, '%f', [4 1]);
-            planeInfo = planeInfo';
-            fclose(fileID);
-            
-            % Load a PC
-            currPCPath = append(currClusterPath, '/pc.segps');
-            fileID = fopen(currPCPath,'r');
-            curr_pc = fscanf(fileID, '%f', [8 Inf]);
-            curr_pc = curr_pc';
-            fclose(fileID);
-            
-            %Denoise
-           %[denoised_pc,inlierIndices,outlierIndices] = pcdenoise(pointCloud(curr_pc(:,1:3)));
-            %curr_pc = curr_pc(inlierIndices,:);
-            %figure
-            %pcshow(pointCloud(curr_pc(:,1:3)));
-            input_pc = [input_pc; curr_pc];
-            
-            % Load info about the plane
-            xlim = [min(curr_pc(:,1)), max(curr_pc(:,1))];
-            ylim = [min(curr_pc(:,2)), max(curr_pc(:,2))];
-            zlim = [min(curr_pc(:,3)), max(curr_pc(:,3))];
-            setOfPlanes = [setOfPlanes; 2*(i-2)-1, planeInfo, xlim, ylim, zlim]; % the idx of the 1st data starts from 3
-            setOfPlanes = [setOfPlanes; 2*(i-2), (-1.0)*planeInfo, xlim, ylim, zlim]; % in the case of the oposite direction of the normal
-        else
-            fclose(fileID);
+        if fileID ~= -1 % if pc.fit is NOT empty
+            currPriType = fscanf(fileID, '%s', [1 1]);
+            if strcmp(currPriType, 'plane')
+                planeInfo = fscanf(fileID, '%f', [4 1]);
+                planeInfo = planeInfo';
+                fclose(fileID);
+
+                % Load a PC
+                currPCPath = append(currClusterPath, '/pc.segps');
+                fileID = fopen(currPCPath,'r');
+                curr_pc = fscanf(fileID, '%f', [8 Inf]);
+                curr_pc = curr_pc';
+                fclose(fileID);
+
+                %Denoise
+                %[denoised_pc,inlierIndices,outlierIndices] = pcdenoise(pointCloud(curr_pc(:,1:3)));
+                %curr_pc = curr_pc(inlierIndices,:);
+                %figure
+                %pcshow(pointCloud(curr_pc(:,1:3)));
+                input_pc = [input_pc; curr_pc];
+
+                % Load info about the plane
+                xlim = [min(curr_pc(:,1)), max(curr_pc(:,1))];
+                ylim = [min(curr_pc(:,2)), max(curr_pc(:,2))];
+                zlim = [min(curr_pc(:,3)), max(curr_pc(:,3))];
+                setOfPlanes = [setOfPlanes; 2*(i-2)-1, planeInfo, xlim, ylim, zlim]; % the idx of the 1st data starts from 3
+                setOfPlanes = [setOfPlanes; 2*(i-2), (-1.0)*planeInfo, xlim, ylim, zlim]; % in the case of the oposite direction of the normal
+            else
+                fclose(fileID);
+            end
         end
     end
+    
     input_pc = input_pc(2:end,:);  %Remove the extra rows
     setOfPlanes = setOfPlanes(2:end,:);  %Remove the extra rows
     inputPC = pointCloud(input_pc(:,1:3), 'Normal', input_pc(:,4:6));

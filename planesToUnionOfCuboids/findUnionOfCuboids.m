@@ -37,10 +37,25 @@ function findUnionOfCuboids(inputPC, setOfPlanes)
                         'MaxStallGenerations', 20,'UseVectorized',true); %set Tolerance
                     
     np = size(setOfPlanes,1);   
-    numberOfVariables = (np/6)/2; % Number of cuboids. We divide by 2 since we consider both of the given normal direction and the oposite direction.
+    numberOfVariables = floor((np/6)/2); % Number of cuboids. We divide by 2 since we consider both of the given normal direction and the oposite direction.
+    diary ga_log.txt
     [x,fval,reason,output] = ga(FitnessFcn,numberOfVariables,[],[],[],[],[],[],[],options)
     unionOfCuboids = x{1};
     disp('Result');
     disp(unionOfCuboids);
+    diary off
+    
+    %Save the result of ga
+    fileID = fopen('unionOfCuboids.txt','w');
+    for i = 1:size(unionOfCuboids,1)
+        fprintf(fileID,'%d %d %d %d %d %d\n', unionOfCuboids(i,:));
+    end
+    fclose(fileID);
+    fileID = fopen('setOfPlanes.txt','w');
+    for i = 1:size(setOfPlanes,1)
+        fprintf(fileID,'%d %f %f %f %f %f %f %f %f %f %f \n', i, setOfPlanes(i,:));
+    end
+    fclose(fileID);
+    
     unionOfCuboids_plot(unionOfCuboids,setOfPlanes);
 end
